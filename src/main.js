@@ -4,6 +4,7 @@ import { attachEngines } from './engines.js';
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J'];
 const PLACEMENT_VARIATION_ENABLED = true;
+const AUTOPLAY_MOVE_DELAY_MS = 620;
 // Measured from the actual raster slab: the hand-made grid is not perfectly
 // uniform, so interaction positions follow its detected lines exactly.
 const GRID_X = [0, 12.544, 25.088, 37.632, 50.176, 62.720, 75.264, 87.573, 100];
@@ -35,6 +36,8 @@ let turn = 'black';
 let playerColor = 'black';
 let captures = { black: 0, white: 0 };
 let passes = 0;
+let koMove = -1;
+let moveHistory = [];
 let finished = false;
 let focusedIndex = at(4, 4);
 let hoveredIndex = null;
@@ -45,6 +48,8 @@ let selfPlay = false;
 let autoplay = false;
 let placedStoneDetails = new Map();
 let placementSerial = 0;
+let gameRevision = 0;
+let pendingOpponentTimer = null;
 
 function normalSample() {
   const a = Math.max(Number.MIN_VALUE, Math.random());
@@ -61,13 +66,13 @@ function makeStoneDetails() {
   }
   return {
     placementId: ++placementSerial,
-    x: limitedNormal(0.55, 1.2),
-    y: limitedNormal(0.55, 1.2),
-    rotation: limitedNormal(0.48, 1.1),
-    scale: 1 + limitedNormal(0.012, 0.027),
-    brightness: 1 + limitedNormal(0.017, 0.034),
-    contrast: 1 + limitedNormal(0.015, 0.03),
-    warmth: Math.max(0, limitedNormal(0.012, 0.028)),
+    x: limitedNormal(0.78, 1.65),
+    y: limitedNormal(0.78, 1.65),
+    rotation: limitedNormal(2.4, 5),
+    scale: 1 + limitedNormal(0.028, 0.06),
+    brightness: 1 + limitedNormal(0.035, 0.07),
+    contrast: 1 + limitedNormal(0.03, 0.06),
+    warmth: Math.max(0, limitedNormal(0.025, 0.06)),
     impact: 1 + limitedNormal(0.055, 0.11),
   };
 }
@@ -99,7 +104,8 @@ function controllerFor(color) {
 }
 
 function opponentLabel(id) {
-  return opponents.get(id)?.label || 'AI';
+  const opponent = opponents.get(id);
+  return opponent?.adapter?.displayLabel || opponent?.label || 'AI';
 }
 
 function announce(message) {
@@ -208,11 +214,16 @@ function syncSoundControls() {
 }
 
 function reset({ color = playerColor } = {}) {
+  gameRevision += 1;
+  if (pendingOpponentTimer !== null) window.clearTimeout(pendingOpponentTimer);
+  pendingOpponentTimer = null;
   board = emptyBoard();
   turn = 'black';
   playerColor = color;
   captures = { black: 0, white: 0 };
   passes = 0;
+  koMove = -1;
+  moveHistory = [];
   finished = false;
   waitingForOpponent = false;
   hoveredIndex = null;
@@ -226,6 +237,9 @@ function reset({ color = playerColor } = {}) {
 }
 
 function finish(message) {
+  gameRevision += 1;
+  if (pendingOpponentTimer !== null) window.clearTimeout(pendingOpponentTimer);
+  pendingOpponentTimer = null;
   finished = true;
   waitingForOpponent = false;
   hoveredIndex = null;
@@ -236,7 +250,7 @@ function finish(message) {
 
 function applyMove(index, color, { distant = false } = {}) {
   if (finished || color !== turn || !Number.isInteger(index) || index < 0 || index >= SIZE * SIZE) return false;
-  const result = tryMove(board, index, color);
+  const result = tryMove(board, index, color, { koMove });
   if (!result.legal) return false;
   board = result.board;
   const placement = makeStoneDetails();
@@ -244,9 +258,13 @@ function applyMove(index, color, { distant = false } = {}) {
   result.captured.forEach((captured) => placedStoneDetails.delete(captured));
   captures[color] += result.captured.length;
   passes = 0;
+  koMove = result.koMove;
+  moveHistory.push(index);
   hoveredIndex = null;
-  audio.place({ color, row: Math.floor(index / SIZE), col: index % SIZE, distant, impact: placement.impact });
-  if (result.captured.length) audio.capture(result.captured.length);
+  if (!distant) {
+    audio.place({ color, row: Math.floor(index / SIZE), col: index % SIZE, distant, impact: placement.impact });
+    if (result.captured.length) audio.capture(result.captured.length);
+  }
   turn = otherColor(color);
   announce(currentTurnLabel());
   render();
@@ -257,6 +275,8 @@ function applyMove(index, color, { distant = false } = {}) {
 function applyPass(color) {
   if (finished || color !== turn) return false;
   passes += 1;
+  koMove = -1;
+  moveHistory.push(SIZE * SIZE);
   if (passes >= 2) {
     finish('Two consecutive passes. The game is finished.');
     return true;
@@ -289,33 +309,43 @@ function requestOpponentMove() {
   thinking.hidden = false;
   announce(`${currentTurnLabel()} ${opponentLabel(opponentId)} is thinking…`);
   render();
-  const state = getState();
-  Promise.resolve(requestMove(state)).then((move) => {
-    if (finished || controllerFor(turn) === 'human') return;
-    waitingForOpponent = false;
-    thinking.hidden = true;
-    if (move?.pass) applyPass(turn);
-    else if (!applyMove(Number.isInteger(move) ? move : move?.index, turn, { distant: true })) {
-      announce(`${currentTurnLabel()} ${opponentLabel(opponentId)} returned no legal move.`);
+  const revision = gameRevision;
+  const runRequest = () => {
+    pendingOpponentTimer = null;
+    if (revision !== gameRevision || finished || controllerFor(turn) !== opponentId) return;
+    const state = getState();
+    Promise.resolve(requestMove(state)).then((move) => {
+      if (revision !== gameRevision || finished || controllerFor(turn) !== opponentId) return;
+      waitingForOpponent = false;
+      thinking.hidden = true;
+      if (move?.pass) applyPass(turn);
+      else if (!applyMove(Number.isInteger(move) ? move : move?.index, turn, { distant: true })) {
+        announce(`${currentTurnLabel()} ${opponentLabel(opponentId)} returned no legal move.`);
+        render();
+      }
+    }).catch(() => {
+      if (revision !== gameRevision) return;
+      waitingForOpponent = false;
+      thinking.hidden = true;
+      announce(`${currentTurnLabel()} ${opponentLabel(opponentId)} is unavailable.`);
       render();
-    }
-  }).catch(() => {
-    waitingForOpponent = false;
-    thinking.hidden = true;
-    announce(`${currentTurnLabel()} ${opponentLabel(opponentId)} is unavailable.`);
-    render();
-  });
+    });
+  };
+  // Autoplay remains interruptible: one move at a time with enough air to
+  // read the game, rather than a worker-to-worker waterfall.
+  if (autoplay) pendingOpponentTimer = window.setTimeout(runRequest, AUTOPLAY_MOVE_DELAY_MS);
+  else runRequest();
 }
 
 function getState() {
   return Object.freeze({
-    board: [...board], turn, playerColor, captures: { ...captures }, passes, finished,
+    board: [...board], turn, playerColor, captures: { ...captures }, passes, koMove, moveHistory: [...moveHistory], finished, autoplay,
     size: SIZE,
   });
 }
 
 function isLegalPlayerMove(index) {
-  return isPlayerTurn() && board[index] === null && tryMove(board, index, playerColor).legal;
+  return isPlayerTurn() && board[index] === null && tryMove(board, index, playerColor, { koMove }).legal;
 }
 
 function chooseIndexFromPointer(event) {

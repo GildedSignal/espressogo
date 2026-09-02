@@ -56,7 +56,7 @@ button { cursor:pointer; }
 .quiet-dialog { width:min(26rem, calc(100vw - 2rem)); padding:2.5rem; border:1px solid rgba(73,61,43,.25); color:var(--ink); background:var(--board); box-shadow:0 16px 40px rgba(49,40,27,.22); }.quiet-dialog::backdrop { background:rgba(46,41,32,.18); backdrop-filter:blur(2px); }.quiet-dialog h2 { margin:0 0 .5rem; font-family:"Cormorant Garamond",Georgia,serif;font-size:2rem;font-weight:500; }.quiet-dialog p { color:var(--muted);line-height:1.5; }.dialog-close { float:right;border:0;background:none;font-size:1.6rem;color:var(--muted); }
 
 /* The place and its objects are photographs, not CSS texture simulations. */
-body { background:#e9e1d3 url('../public/images/courtyard-wall.png') center / cover fixed no-repeat; }
+body { background:#e9e1d3 url('../public/images/courtyard-wall-v2.webp') center / cover fixed no-repeat; }
 .wall-shadow, .fresco { display:none; }
 .game-area { width:min(100%, 52rem); }
 .board-wrap { aspect-ratio:1; padding:0; border:0; border-radius:0; box-shadow:none; background:url('../public/images/go-board-slab-v4.webp') center / contain no-repeat; }
@@ -79,8 +79,8 @@ body { background:#e9e1d3 url('../public/images/courtyard-wall.png') center / co
 
 /* Photograph layers: the wall stays still while the light moves across it. */
 body { background:#e9e1d3 url('../public/images/courtyard-wall-v2.webp') center / cover fixed no-repeat; }
-.wall-shadow { display:block; position:fixed; inset:0; z-index:20; width:auto; height:auto; overflow:hidden; opacity:.25; filter:blur(3.2px); transform:none; transform-origin:34% 12%; mix-blend-mode:multiply; pointer-events:none; background:url('../public/images/tree-shadow-overlay.webp') 50% 50% / cover no-repeat; animation:tree-light-canopy 18s cubic-bezier(.45,0,.55,1) infinite alternate; will-change:transform,opacity; }
-.wall-shadow::before, .wall-shadow::after { content:""; position:absolute; pointer-events:none; background:inherit; background-size:cover; mix-blend-mode:multiply; will-change:transform,opacity; }
+.wall-shadow { display:block; position:fixed; inset:0; z-index:20; width:auto; height:auto; overflow:hidden; opacity:.29; filter:blur(2.4px); transform:none; transform-origin:34% 12%; mix-blend-mode:multiply; pointer-events:none; background:url('../public/images/tree-shadow-overlay.webp') 50% 50% / cover no-repeat; animation:tree-light-canopy 18s cubic-bezier(.45,0,.55,1) infinite alternate; will-change:transform,opacity,background-position; }
+.wall-shadow::before, .wall-shadow::after { content:""; position:absolute; pointer-events:none; background:inherit; background-size:cover; mix-blend-mode:multiply; will-change:transform,opacity,background-position; }
 .wall-shadow::before { inset:-4%; opacity:.12; background-position:53% 48%; filter:blur(.8px); transform-origin:47% 9%; animation:tree-light-gust 11s ease-in-out infinite alternate; }
 .wall-shadow::after { inset:-3%; opacity:.35; background-position:48% 52%; filter:blur(1.1px); transform-origin:31% 15%; animation:tree-light-leaves 5.6s cubic-bezier(.45,0,.55,1) infinite alternate; }
 .room { z-index:1; }
@@ -107,10 +107,10 @@ body { background:#e9e1d3 url('../public/images/courtyard-wall-v2.webp') center 
   100% { transform:translate3d(8px,4px,0) rotate(.16deg) scale(1.012); opacity:.23; }
 }
 @keyframes tree-light-leaves {
-  0% { transform:translate3d(-6px,3px,0) rotate(-.22deg) scale(1.008); opacity:.19; }
-  34% { transform:translate3d(6px,-3px,0) rotate(.16deg) scale(1.018); opacity:.4; }
-  68% { transform:translate3d(-3px,4px,0) rotate(-.1deg) scale(1.011); opacity:.23; }
-  100% { transform:translate3d(9px,-3px,0) rotate(.21deg) scale(1.022); opacity:.36; }
+  0% { transform:translate3d(-8px,4px,0) rotate(-.22deg) scale(1.01); opacity:.26; background-position:46% 53%; }
+  34% { transform:translate3d(9px,-5px,0) rotate(.16deg) scale(1.022); opacity:.48; background-position:53% 47%; }
+  68% { transform:translate3d(-5px,6px,0) rotate(-.1deg) scale(1.014); opacity:.3; background-position:48% 55%; }
+  100% { transform:translate3d(12px,-4px,0) rotate(.21deg) scale(1.028); opacity:.44; background-position:55% 49%; }
 }
 @keyframes tree-light-gust {
   0% { transform:translate3d(-2px,0,0) rotate(-.08deg) scale(1.005); opacity:.08; }
@@ -191,7 +191,9 @@ body { background:#e9e1d3 url('../public/images/courtyard-wall-v2.webp') center 
   .sound-toggle { margin-top:.86rem; font-size:.93rem; }
 
   .game-area {
-    width:min(100%, 55rem);
+    /* Keep the turn controls above the fixed plinth on laptop-height windows.
+       The previous fixed 55rem cap could put the footer below the viewport. */
+    width:min(100%, 55rem, max(18rem, calc(100svh - 13rem)));
     justify-self:start;
     margin-top:clamp(-1.4rem, -1.5vw, -.35rem);
   }
@@ -207,17 +209,98 @@ body { background:#e9e1d3 url('../public/images/courtyard-wall-v2.webp') center 
   display:block;
   position:fixed;
   inset:auto 0 0;
-  z-index:2;
+  /* It stays visible over both the photo and the moving canopy. */
+  z-index:30;
   height:clamp(3.4rem, 5.2vh, 4.75rem);
-  opacity:.24;
+  opacity:.56;
   border-top-color:rgba(68,78,79,.27);
   background-color:rgba(130,139,135,.32);
   pointer-events:none;
 }
 
 @media (max-width:760px) {
-  .fresco { height:calc(3.4rem + env(safe-area-inset-bottom)); opacity:.24; }
+  .fresco { height:calc(3.4rem + env(safe-area-inset-bottom)); opacity:.48; }
   .game-area { margin-top:1.45rem; }
   .play-details { grid-template-areas:"masthead source" "choice opponent"; }
   .eyebrow { margin-top:1rem; }
+  /* Fixed attachment causes expensive repaints and unreliable viewport sizing
+     in mobile browsers. The photograph remains the same, but scrolls natively. */
+  body { background-attachment:scroll; }
+}
+
+/* Autoplay uses the same restrained paper controls as the opponent picker,
+   with both seats readable as a small match card rather than utility buttons. */
+.autoplay-controls {
+  position:relative;
+  width:min(100%, 15.45rem);
+  margin-top:1.35rem;
+  padding-top:1.15rem;
+  border-top:1px solid rgba(73,61,43,.16);
+}
+.engine-seats { display:grid; gap:.42rem; }
+.engine-seat {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  width:100%;
+  padding:.49rem .66rem .53rem;
+  border:1px solid rgba(73,61,43,.15);
+  background:rgba(242,235,222,.28);
+  box-shadow:inset 0 1px rgba(255,255,255,.55);
+  color:var(--ink);
+  font-family:"Cormorant Garamond", Georgia, serif;
+  font-size:1.05rem;
+  text-align:left;
+}
+.engine-seat:hover, .engine-seat:focus-visible { border-color:rgba(73,61,43,.4); background:rgba(242,235,222,.48); }
+.engine-list { position:absolute; z-index:35; right:0; left:0; margin-top:.3rem; padding:.28rem; border:1px solid rgba(73,61,43,.22); background:rgba(239,229,210,.98); box-shadow:0 10px 20px rgba(70,56,39,.13); }
+.engine-list button { display:block; width:100%; padding:.42rem .45rem; border:0; background:transparent; color:var(--ink); text-align:left; font-size:.86rem; }
+.engine-list button:hover, .engine-list button:focus-visible { background:rgba(111,135,146,.12); }
+.engine-note { margin:.7rem 0 0; color:var(--muted); font-size:.72rem; font-style:italic; line-height:1.35; }
+
+/* Landscape phones and short laptop windows should retain a complete board,
+   its status, and the bottom plinth in one frame rather than clipping controls. */
+@media (min-width:761px) and (max-height:800px) {
+  .room {
+    min-height:100svh;
+    padding-top:clamp(1.35rem, 4vh, 2.25rem);
+    padding-bottom:clamp(3.8rem, 7vh, 4.8rem);
+  }
+
+  .site-nav { margin-top:0; }
+  .play-details { padding-bottom:0; }
+  .source-note { margin-top:2rem; }
+  .game-footer { min-height:3.25rem; padding-top:.7rem; }
+  .fresco { height:clamp(3.1rem, 7vh, 3.7rem); }
+}
+
+@media (max-width:760px) {
+  .autoplay-controls { grid-column:1 / -1; width:100%; margin-top:1.15rem; }
+  .engine-seat { font-size:1rem; }
+}
+
+@media (max-width:390px) {
+  .source-note { display:block; grid-column:1 / -1; max-width:none; margin-top:1.25rem; }
+}
+
+/* On a phone the room reads as one calm vertical sequence.  The former compact
+   two-column aside made the credit block collide with the wordmark at 390px. */
+@media (max-width:760px) {
+  .play-details {
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    width:100%;
+    padding:2rem 0 5.6rem;
+  }
+  .masthead, .stone-choice, .opponent, .autoplay-controls, .source-note { grid-area:auto; }
+  .masthead h1 { font-size:clamp(3.45rem, 16vw, 4.2rem); line-height:.82; }
+  .eyebrow { margin-top:1.05rem; }
+  .stone-choice { margin-top:1.65rem; gap:1.25rem; }
+  .opponent { width:min(100%, 15.5rem); margin-top:2.1rem; }
+  .source-note { width:min(100%, 16rem); max-width:none; margin-top:2.4rem; font-size:.8rem; line-height:1.58; }
+  .autoplay-controls { width:min(100%, 15.5rem); }
+  /* The image stays proportionate to the photographed grid; this transparent
+     hit ring makes each intersection a reliable 44px touch target. */
+  .intersection::after { content:""; position:absolute; left:50%; top:50%; width:44px; height:44px; transform:translate(-50%,-50%); }
 }

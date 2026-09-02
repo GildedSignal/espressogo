@@ -19,8 +19,8 @@ export function groupAndLiberties(board, origin) {
   }
   return { group, liberties };
 }
-export function tryMove(board, index, color) {
-  if (board[index] !== null) return { legal: false, board, captured: [] };
+export function tryMove(board, index, color, { koMove = -1 } = {}) {
+  if (board[index] !== null || index === koMove) return { legal: false, board, captured: [], koMove };
   const next = [...board]; next[index] = color;
   const captured = [];
   for (const neighbor of neighbors(index)) {
@@ -29,6 +29,10 @@ export function tryMove(board, index, color) {
       if (!group.liberties.size) for (const stone of group.group) { next[stone] = null; captured.push(stone); }
     }
   }
-  if (!groupAndLiberties(next, index).liberties.size) return { legal: false, board, captured: [] };
-  return { legal: true, board: next, captured };
+  const ownGroup = groupAndLiberties(next, index);
+  if (!ownGroup.liberties.size) return { legal: false, board, captured: [], koMove };
+  const nextKoMove = captured.length === 1 && ownGroup.group.size === 1 && ownGroup.liberties.size === 1
+    ? captured[0]
+    : -1;
+  return { legal: true, board: next, captured, koMove: nextKoMove };
 }
