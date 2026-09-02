@@ -303,7 +303,10 @@ function applyMove(index, color, { distant = false, telemetry = null, opponentId
   moveHistory.push(index);
   recordMove({ color, index, telemetry, opponentId });
   hoveredIndex = null;
-  if (!distant) {
+  // Autoplay is deliberately quiet: its rapid engine-to-engine sequence would
+  // turn ordinary placement sounds into noise. A normal game against an
+  // engine still sounds like a game, including that engine's moves.
+  if (!autoplay) {
     audio.place({ color, row: Math.floor(index / SIZE), col: index % SIZE, distant, impact: placement.impact });
     if (result.captured.length) audio.capture(result.captured.length);
   }
