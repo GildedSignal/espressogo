@@ -57,7 +57,7 @@ button { cursor:pointer; }
 .quiet-dialog { width:min(26rem, calc(100vw - 2rem)); padding:2.5rem; border:1px solid rgba(73,61,43,.25); color:var(--ink); background:var(--board); box-shadow:0 16px 40px rgba(49,40,27,.22); }.quiet-dialog::backdrop { background:rgba(46,41,32,.18); backdrop-filter:blur(2px); }.quiet-dialog h2 { margin:0 0 .5rem; font-family:"Cormorant Garamond",Georgia,serif;font-size:2rem;font-weight:500; }.quiet-dialog p { color:var(--muted);line-height:1.5; }.dialog-close { float:right;border:0;background:none;font-size:1.6rem;color:var(--muted); }
 
 /* The place and its objects are photographs, not CSS texture simulations. */
-body { background:#e9e1d3 url('../public/images/courtyard-wall-v2.webp') center / cover scroll no-repeat; }
+body { background:#e9e1d3 url('../public/images/courtyard-wall-v2.webp') center bottom / cover scroll no-repeat; }
 .wall-shadow, .fresco { display:none; }
 .game-area { width:min(100%, 52rem); }
 .board-wrap { aspect-ratio:1; padding:0; border:0; border-radius:0; box-shadow:none; background:url('../public/images/go-board-slab-v4.webp') center / contain no-repeat; }
@@ -79,7 +79,7 @@ body { background:#e9e1d3 url('../public/images/courtyard-wall-v2.webp') center 
 @media (prefers-reduced-motion: reduce) { *,*::before,*::after { scroll-behavior:auto!important; animation-duration:.01ms!important; animation-iteration-count:1!important; transition-duration:.01ms!important; } }
 
 /* Photograph layers: the wall stays still while the light moves across it. */
-body { background:#e9e1d3 url('../public/images/courtyard-wall-v2.webp') center / cover scroll no-repeat; }
+body { background:#e9e1d3 url('../public/images/courtyard-wall-v2.webp') center bottom / cover scroll no-repeat; }
 /* This is intentionally one GPU-composited breeze layer. The prior full-screen
    blur, blend mode, and animated background-position forced expensive repaints. */
 .wall-shadow { display:block; position:fixed; inset:-2%; z-index:20; width:auto; height:auto; overflow:hidden; opacity:.2; filter:none; transform:none; transform-origin:34% 12%; pointer-events:none; background:url('../public/images/tree-shadow-overlay.webp') 50% 50% / cover no-repeat; animation:tree-light-canopy 15s cubic-bezier(.45,0,.55,1) infinite alternate; will-change:transform,opacity; }
