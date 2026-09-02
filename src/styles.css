@@ -211,22 +211,7 @@ body { background:#e9e1d3 url('../public/images/courtyard-wall-v2.webp') center 
   .game-actions button { font-size:1.13rem; }
 }
 
-/* A quiet plinth grounds the room without competing with the photographed wall. */
-.fresco {
-  display:block;
-  position:fixed;
-  inset:auto 0 0;
-  /* It stays visible over both the photo and the moving canopy. */
-  z-index:30;
-  height:clamp(3.4rem, 5.2vh, 4.75rem);
-  opacity:.56;
-  border-top-color:rgba(68,78,79,.27);
-  background-color:rgba(130,139,135,.32);
-  pointer-events:none;
-}
-
 @media (max-width:760px) {
-  .fresco { height:calc(3.4rem + env(safe-area-inset-bottom)); opacity:.48; }
   .game-area { margin-top:1.45rem; }
   .play-details { grid-template-areas:"masthead source" "choice opponent"; }
   .eyebrow { margin-top:1rem; }
@@ -278,7 +263,6 @@ body { background:#e9e1d3 url('../public/images/courtyard-wall-v2.webp') center 
   .play-details { padding-bottom:0; }
   .source-note { margin-top:2rem; }
   .game-footer { min-height:3.25rem; padding-top:.7rem; }
-  .fresco { height:clamp(3.1rem, 7vh, 3.7rem); }
 }
 
 @media (max-width:760px) {
