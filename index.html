@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Espresso</title>
+    <style>
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; color: #4a5560; }
+      :root { --band: 90px; --scallop: 72px; }
+      body {
+        font: 16px/1.45 Palatino, "Palatino Linotype", "Iowan Old Style", Times, serif;
+        background: #e6e0d6;
+        overflow: hidden;
+      }
+      .wall {
+        position: fixed; inset: 0 var(--band) var(--scallop) 0; z-index: 0;
+        pointer-events: none;
+        background: url("./skin/marble.jpg") center / cover no-repeat;
+      }
+      .scallop {
+        position: fixed; left: 0; right: var(--band); bottom: 0; height: var(--scallop); z-index: 5;
+        background: url("./skin/scallop.png") center bottom / 100% var(--scallop) no-repeat;
+        pointer-events: none;
+      }
+      .frieze {
+        position: fixed; top: 0; right: 0; bottom: 0; width: var(--band); z-index: 10;
+        background: url("./skin/frieze.png") top right / var(--band) 100% no-repeat;
+        pointer-events: none;
+      }
+      main {
+        position: relative; z-index: 2;
+        height: 100%;
+        padding: 18px var(--band) var(--scallop) 28px;
+        display: grid;
+        grid-template-columns: 176px minmax(0, 1fr);
+        grid-template-rows: auto minmax(0, 1fr);
+        column-gap: 12px;
+      }
+      .brand { grid-column: 1; }
+      h1 { margin: 0; font-size: 2.15rem; font-weight: 500; color: #3d4650; }
+      .kicker { display: block; margin-top: 2px; font-size: 0.75rem; letter-spacing: 0.2em; color: #6a7380; }
+      .nav { grid-column: 2; text-align: right; padding: 8px 12px 0 0; }
+      .nav a { color: #6a7380; text-decoration: none; margin-left: 24px; }
+      .thanks { margin-top: 28px; font-size: 0.78rem; color: #7a8490; line-height: 1.4; max-width: 11em; }
+      .thanks a { color: #5c6570; }
+      .side { grid-column: 1; padding-top: 24px; }
+      .stage {
+        grid-column: 2;
+        min-width: 0; min-height: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        justify-content: center;
+        padding-right: 12px;
+      }
+      .play {
+        display: grid;
+        grid-template-columns: 18px var(--side);
+        column-gap: 10px;
+        --side: min(56vh, calc(100vh - var(--scallop) - 56px), calc(100vw - 176px - var(--band) - 80px));
+      }
+      .eval { height: var(--side); width: 18px; display: flex; flex-direction: column; align-items: center; }
+      .eval-track {
+        flex: 1; width: 12px;
+        display: flex; flex-direction: column-reverse;
+        background: #efe8dc;
+        border: 1px solid #c9b7a2;
+        overflow: hidden;
+      }
+      #eval-black { width: 100%; height: 50%; background: #3a4552; flex: 0 0 auto; }
+      #eval-num { margin-top: 4px; font-size: 0.7rem; color: #6a7380; }
+      .engines { margin: 0 0 22px; padding: 0; border: 0; }
+      .engines label { display: block; margin: 4px 0; cursor: pointer; color: #6a7380; }
+      .engines input { margin-right: 6px; }
+      body.playing .engines { visibility: hidden; }
+      .seats { display: flex; gap: 18px; margin: 8px 0 22px; }
+      .seat {
+        appearance: none; background: none; border: 0; padding: 6px; cursor: pointer;
+        font: inherit; color: inherit; text-align: center;
+      }
+      .seat .stone {
+        display: block; width: 36px; height: 36px; border-radius: 50%; margin: 0 auto 8px;
+      }
+      .seat .stone.b { background: #3a4552; box-shadow: 0 1px 3px #0003; }
+      .seat .stone.w { background: #f4efe6; border: 1px solid #c9c2b6; }
+      .seat.on .stone { outline: 2px solid #a85a52; outline-offset: 3px; }
+      .seat .who { display: block; font-size: 0.8rem; color: #6a7380; }
+      .seat .cap { display: block; font-size: 0.85rem; color: #5c6570; }
+      #turn-label { color: #a85a52; font-size: 1.05rem; margin: 8px 0 16px; min-height: 1.3em; }
+      .acts { display: flex; gap: 10px; margin: 12px 0 0 28px; }
+      button { font: inherit; color: #4a5560; background: #f3efe6cc; border: 1px solid #9aa3ad; border-radius: 2px; padding: 8px 18px; cursor: pointer; }
+      button:disabled { opacity: 0.35; }
+      .ghost { border: 0; padding: 0; background: none; color: #6a7380; text-decoration: underline; text-underline-offset: 3px; }
+      .board-frame {
+        width: var(--side);
+        height: var(--side);
+        padding: 12px;
+        background: #f3efe6;
+        border: 1px solid #c9b7a2;
+        box-shadow:
+          inset 0 0 0 5px #efe8dc,
+          inset 0 0 0 6px #c9b8c4,
+          inset 0 0 0 7px #aeb8c2;
+      }
+      svg.board { display: block; width: 100%; height: 100%; }
+      #board.live { cursor: pointer; }
+      .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+      #status { position: absolute; width: 1px; height: 1px; overflow: hidden; }
+      @media (max-width: 740px) {
+        body { overflow: auto; }
+        :root { --band: 0px; }
+        main { grid-template-columns: 1fr; height: auto; padding: 20px 16px 88px; }
+        .nav, .brand, .side, .stage { grid-column: 1; }
+        .nav { text-align: left; }
+        .frieze { display: none; }
+        .wall, .scallop { right: 0; }
+        .stage { justify-content: center; }
+        .play { --side: min(92vw, 62vh); }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wall" aria-hidden="true"></div>
+    <div class="scallop"></div>
+    <div class="frieze"></div>
+    <main>
+      <div class="brand">
+        <h1>Espresso<span class="kicker">9×9 GO</span></h1>
+      </div>
+      <nav class="nav">
+        <a href="./FROM_MOKA.md">How to Play</a>
+        <a href="./LICENSE">MIT</a>
+        <a href="./FROM_MOKA.md">About</a>
+      </nav>
+      <aside class="side">
+        <fieldset class="engines" id="setup">
+          <label><input type="radio" name="engine" value="policy" />Moka GitHub</label>
+          <label><input type="radio" name="engine" value="baseline" />Moka web</label>
+          <label><input type="radio" name="engine" value="improved" checked />Espresso</label>
+        </fieldset>
+        <div class="seats">
+          <button type="button" class="seat on" data-color="1" id="seat-black">
+            <span class="stone b"></span>
+            <span class="who">Black</span>
+            <span class="cap"><span id="black-cap">0</span></span>
+          </button>
+          <button type="button" class="seat" data-color="-1" id="seat-white">
+            <span class="stone w"></span>
+            <span class="who">White</span>
+            <span class="cap"><span id="white-cap">0</span></span>
+          </button>
+        </div>
+        <p id="turn-label"></p>
+        <p class="thanks">From <a href="https://github.com/millionco/moka">Million Moka</a> (MIT). Thanks, Aiden Bai.</p>
+      </aside>
+      <section class="stage">
+        <div class="play">
+          <div class="eval" aria-label="Position evaluation">
+            <div class="eval-track"><div id="eval-black"></div></div>
+            <span id="eval-num">—</span>
+          </div>
+          <div class="board-frame">
+            <svg id="board" class="board" viewBox="0 0 400 400" aria-label="Go board"></svg>
+          </div>
+        </div>
+        <div class="acts">
+          <button id="pass" type="button" disabled>Pass</button>
+          <button id="resign" type="button" disabled>Resign</button>
+        </div>
+      </section>
+    </main>
+    <div class="sr">
+      <span id="engine-badge"></span>
+      <span id="captures"></span>
+      <span id="stats"></span>
+      <p id="status"></p>
+      <span id="you-cap"></span>
+      <span id="opp-cap"></span>
+    </div>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

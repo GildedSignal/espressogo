@@ -1,0 +1,14 @@
+{
+  "weightsI8": 71040,
+  "scales": 992,
+  "biases": 992,
+  "weightsF32": 33321,
+  "actScales": 14,
+  "trunkRescale": 12,
+  "calibrationPositions": 1024,
+  "trunk": 32,
+  "bn": 16,
+  "blocks": 12,
+  "scoreHidden": 32,
+  "note": "i7 weights in dot layout; scales and biases folded; per-block trunk scales; heads unquantised"
+}
