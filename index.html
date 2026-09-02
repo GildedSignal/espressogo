@@ -34,7 +34,8 @@
           <div class="opponent-list" id="opponent-list" hidden>
             <button type="button" data-opponent="espresso">Espresso</button>
             <button type="button" data-opponent="moka-web">Moka web</button>
-            <button type="button" data-opponent="moka-github">Moka GitHub</button>
+            <button type="button" data-opponent="moka-d4">Moka D4</button>
+            <button type="button" data-opponent="moka-github">Moka greedy</button>
             <button type="button" data-opponent="yourself">Yourself</button>
             <button type="button" data-opponent="autoplay">Autoplay</button>
           </div>
@@ -47,6 +48,12 @@
           </div>
           <div class="engine-list" id="engine-list" role="menu" hidden></div>
           <p class="engine-note" id="engine-note">The engines will take turns at a measured pace.</p>
+          <div class="match-score" id="match-score" aria-live="polite" hidden>
+            <p class="match-title" id="match-title">Match · 0 games</p>
+            <p id="match-black">Black · 0 wins · 0 ms</p>
+            <p id="match-white">White · 0 wins · 0 ms</p>
+            <p class="match-last" id="match-last">Area score uses 7 komi for White.</p>
+          </div>
         </section>
         <footer class="source-note" id="about">
           <p>Espresso is a browser 9×9 Go player built on Million’s Moka (MIT). Same family of engine; the work here is the faster runtime, a new student net, and this room.</p>

@@ -1,10 +1,11 @@
-import { SIZE, at, emptyBoard, tryMove } from './game.js';
+import { SIZE, at, emptyBoard, scoreArea, tryMove } from './game.js';
 import { CourtyardAudio } from './audio.js';
 import { attachEngines } from './engines.js';
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J'];
 const PLACEMENT_VARIATION_ENABLED = true;
 const AUTOPLAY_MOVE_DELAY_MS = 0;
+const AUTOPLAY_MAX_MOVES = 120;
 // Measured from the actual raster slab: the hand-made grid is not perfectly
 // uniform, so interaction positions follow its detected lines exactly.
 const GRID_X = [0, 12.544, 25.088, 37.632, 50.176, 62.720, 75.264, 87.573, 100];
@@ -28,6 +29,11 @@ const autoplayControls = document.querySelector('#autoplay-controls');
 const engineSeats = [...document.querySelectorAll('.engine-seat')];
 const engineList = document.querySelector('#engine-list');
 const engineNote = document.querySelector('#engine-note');
+const matchScore = document.querySelector('#match-score');
+const matchTitle = document.querySelector('#match-title');
+const matchBlack = document.querySelector('#match-black');
+const matchWhite = document.querySelector('#match-white');
+const matchLast = document.querySelector('#match-last');
 const moveLogElement = document.querySelector('#move-log');
 const howToPlay = document.querySelector('#how-to-play');
 const audio = new CourtyardAudio();
@@ -51,7 +57,22 @@ let placedStoneDetails = new Map();
 let placementSerial = 0;
 let gameRevision = 0;
 let pendingOpponentTimer = null;
+let matchRestartToken = 0;
 let moveLog = [];
+let matchStats = createMatchStats();
+
+function createMatchStats() {
+  return {
+    games: 0,
+    wins: { black: 0, white: 0 },
+    thinkMs: { black: 0, white: 0 },
+    lastScore: null,
+  };
+}
+
+function cancelPendingMatchRestart() {
+  matchRestartToken += 1;
+}
 
 function normalSample() {
   const a = Math.max(Number.MIN_VALUE, Math.random());
@@ -201,7 +222,34 @@ function render() {
     const unavailable = ['black', 'white'].filter((color) => !opponents.get(selectedOpponents[color])?.adapter);
     engineNote.textContent = unavailable.length ? 'Attach an engine to begin autoplay.' : 'Autoplay is running.';
   }
+  renderMatchScore();
   syncSoundControls();
+}
+
+function formatElapsed(ms) {
+  if (!Number.isFinite(ms) || ms <= 0) return '0 ms';
+  if (ms < 1000) return `${Math.round(ms)} ms`;
+  return `${(ms / 1000).toFixed(ms < 10000 ? 1 : 0)} s`;
+}
+
+function formatScore(score) {
+  return Number.isInteger(score) ? String(score) : score.toFixed(1);
+}
+
+function renderMatchScore() {
+  if (!matchScore) return;
+  matchScore.hidden = !autoplay;
+  if (!autoplay) return;
+  matchTitle.textContent = `Match · ${matchStats.games} ${matchStats.games === 1 ? 'game' : 'games'}`;
+  matchBlack.textContent = `Black · ${opponentLabel(selectedOpponents.black)} · ${matchStats.wins.black} wins · ${formatElapsed(matchStats.thinkMs.black)}`;
+  matchWhite.textContent = `White · ${opponentLabel(selectedOpponents.white)} · ${matchStats.wins.white} wins · ${formatElapsed(matchStats.thinkMs.white)}`;
+  if (!matchStats.lastScore) {
+    matchLast.textContent = 'Area score uses 7 komi for White.';
+    return;
+  }
+  const score = matchStats.lastScore;
+  const winner = score.winner ? `${score.winner[0].toUpperCase()}${score.winner.slice(1)} won` : 'Draw';
+  matchLast.textContent = `Last · Black ${formatScore(score.black)} — White ${formatScore(score.white)} · ${winner}`;
 }
 
 function formatModelSize(bytes) {
@@ -239,6 +287,9 @@ function recordMove({ color, index = null, pass = false, telemetry = null, oppon
     telemetry,
     opponentId,
   });
+  if (autoplay && Number.isFinite(telemetry?.elapsedMs)) {
+    matchStats.thinkMs[color] += Math.max(0, telemetry.elapsedMs);
+  }
 }
 
 function syncSoundControls() {
@@ -253,10 +304,12 @@ function syncSoundControls() {
   });
 }
 
-function reset({ color = playerColor } = {}) {
+function reset({ color = playerColor, keepMatch = false } = {}) {
   gameRevision += 1;
   if (pendingOpponentTimer !== null) window.clearTimeout(pendingOpponentTimer);
   pendingOpponentTimer = null;
+  cancelPendingMatchRestart();
+  if (!keepMatch) matchStats = createMatchStats();
   board = emptyBoard();
   turn = 'black';
   playerColor = color;
@@ -277,16 +330,37 @@ function reset({ color = playerColor } = {}) {
   requestOpponentMove();
 }
 
-function finish(message) {
+function completeAutoplayGame(reason) {
+  const score = scoreArea(board);
+  matchStats.games += 1;
+  if (score.winner) matchStats.wins[score.winner] += 1;
+  matchStats.lastScore = score;
+  const scoreLine = `Black ${formatScore(score.black)} — White ${formatScore(score.white)}.`;
+  finish(`${reason} ${scoreLine}`, { continueAutoplay: true });
+}
+
+function finish(message, { continueAutoplay = false } = {}) {
   gameRevision += 1;
   if (pendingOpponentTimer !== null) window.clearTimeout(pendingOpponentTimer);
   pendingOpponentTimer = null;
+  cancelPendingMatchRestart();
   finished = true;
   waitingForOpponent = false;
   hoveredIndex = null;
   thinking.hidden = true;
   announce(message);
   render();
+  if (!continueAutoplay) return;
+
+  // Autoplay is silent during rapid play, but a completed game gets the
+  // physical board-clear recording. The next game starts only once that sound
+  // actually finishes, never on an arbitrary visual timer.
+  const revision = gameRevision;
+  const restartToken = ++matchRestartToken;
+  audio.cleanBoard({ waitForEnd: true }).finally(() => {
+    if (restartToken !== matchRestartToken || revision !== gameRevision || !autoplay) return;
+    reset({ keepMatch: true });
+  });
 }
 
 function applyMove(index, color, { distant = false, telemetry = null, opponentId = null } = {}) {
@@ -311,6 +385,10 @@ function applyMove(index, color, { distant = false, telemetry = null, opponentId
     if (result.captured.length) audio.capture(result.captured.length);
   }
   turn = otherColor(color);
+  if (autoplay && moveHistory.length >= AUTOPLAY_MAX_MOVES) {
+    completeAutoplayGame('Move limit reached.');
+    return true;
+  }
   announce(currentTurnLabel());
   render();
   requestOpponentMove();
@@ -324,7 +402,8 @@ function applyPass(color, { telemetry = null, opponentId = null } = {}) {
   moveHistory.push(SIZE * SIZE);
   recordMove({ color, pass: true, telemetry, opponentId });
   if (passes >= 2) {
-    finish('Two consecutive passes. The game is finished.');
+    if (autoplay) completeAutoplayGame('Two consecutive passes.');
+    else finish('Two consecutive passes. The game is finished.');
     return true;
   }
   turn = otherColor(color);

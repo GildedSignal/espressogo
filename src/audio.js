@@ -414,7 +414,7 @@ export class CourtyardAudio {
     return null;
   }
 
-  async playAction(action, { col = 4, distant = false, impact = 1 } = {}) {
+  async playAction(action, { col = 4, distant = false, impact = 1, waitForEnd = false } = {}) {
     if (!this.enabled || !this.actionEnabled[action] || !AUDIO_ACTIONS.includes(action) || !(await this.unlock())) return;
     if (action === 'ambience') {
       await this.ensureAmbience();
@@ -438,11 +438,17 @@ export class CourtyardAudio {
     gain.gain.setValueAtTime(this.actionVolumes[action] * this.assetVolumes[sound.id] * naturalImpact * (distant ? 0.66 : 1), this.context.currentTime);
     this.connectSpatially(source, gain, col);
     this.sources.add(source);
-    source.onended = () => this.sources.delete(source);
+    const playbackEnded = new Promise((resolve) => {
+      source.onended = () => {
+        this.sources.delete(source);
+        resolve();
+      };
+    });
     try {
       source.start();
       this.lastAsset.set(action, sound.url.replace(BASE, ''));
       this.ensureAmbience().catch(() => {});
+      if (waitForEnd) await playbackEnded;
     } catch {
       this.sources.delete(source);
     }
@@ -496,7 +502,7 @@ export class CourtyardAudio {
 
   resign() { return this.playAction('resign'); }
 
-  cleanBoard() { return this.playAction('clean-board'); }
+  cleanBoard({ waitForEnd = false } = {}) { return this.playAction('clean-board', { waitForEnd }); }
 
   clearBoard() { return this.cleanBoard(); }
 

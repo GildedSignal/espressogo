@@ -249,6 +249,10 @@ body { background:#e9e1d3 url('../public/images/courtyard-wall-v2.webp') center 
 .engine-list button { display:block; width:100%; padding:.42rem .45rem; border:0; background:transparent; color:var(--ink); text-align:left; font-size:.86rem; }
 .engine-list button:hover, .engine-list button:focus-visible { background:rgba(111,135,146,.12); }
 .engine-note { margin:.7rem 0 0; color:var(--muted); font-size:.72rem; font-style:italic; line-height:1.35; }
+.match-score { margin:.8rem 0 0; padding-top:.7rem; border-top:1px solid rgba(73,61,43,.14); color:var(--muted); font-size:.72rem; line-height:1.45; }
+.match-score p { margin:.12rem 0; }
+.match-score .match-title { color:var(--ink); font-family:"Cormorant Garamond", Georgia, serif; font-size:1.04rem; font-style:normal; }
+.match-score .match-last { margin-top:.38rem; font-style:italic; }
 
 /* Landscape phones and short laptop windows should retain a complete board,
    its status, and the bottom plinth in one frame rather than clipping controls. */
@@ -268,6 +272,8 @@ body { background:#e9e1d3 url('../public/images/courtyard-wall-v2.webp') center 
 @media (max-width:760px) {
   .autoplay-controls { grid-column:1 / -1; width:100%; margin-top:1.15rem; }
   .engine-seat { font-size:1rem; }
+  .match-score { margin-top:.55rem; padding-top:.45rem; font-size:.62rem; }
+  .match-score .match-title { font-size:.88rem; }
 }
 
 @media (max-width:390px) {

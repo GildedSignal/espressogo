@@ -23,8 +23,21 @@ const ENGINES = {
     modelSizeBytes: 113648,
     modelFormat: "reference",
   },
+  "moka-d4": {
+    // The full source-search path: a substantially deeper budget coupled to
+    // the eight-view root policy.  It is intentionally separate from the
+    // million.dev web setting so a match can make that cost visible.
+    label: "Moka D4",
+    backend: "reference",
+    ponder: false,
+    simulations: 256,
+    rootD4: true,
+    search: true,
+    modelSizeBytes: 113648,
+    modelFormat: "reference · full D4",
+  },
   "moka-github": {
-    label: "Moka GitHub",
+    label: "Moka greedy",
     backend: "reference",
     ponder: false,
     simulations: 0,

@@ -36,3 +36,47 @@ export function tryMove(board, index, color, { koMove = -1 } = {}) {
     : -1;
   return { legal: true, board: next, captured, koMove: nextKoMove };
 }
+
+// A compact Chinese-style area count for the completed autoplay match. Empty
+// regions surrounded by exactly one colour belong to that colour; unsettled
+// regions stay neutral. The game UI does not have a dead-stone adjudication
+// phase, so this is deliberately an end-of-game estimate rather than a claim
+// of tournament scoring precision.
+export function scoreArea(board, { komi = 7 } = {}) {
+  let black = 0;
+  let white = komi;
+  const seen = new Set();
+
+  board.forEach((stone) => {
+    if (stone === 'black') black += 1;
+    if (stone === 'white') white += 1;
+  });
+
+  for (let index = 0; index < board.length; index += 1) {
+    if (board[index] !== null || seen.has(index)) continue;
+    const region = [index];
+    const borders = new Set();
+    seen.add(index);
+    for (let cursor = 0; cursor < region.length; cursor += 1) {
+      for (const neighbor of neighbors(region[cursor])) {
+        if (board[neighbor] === null && !seen.has(neighbor)) {
+          seen.add(neighbor);
+          region.push(neighbor);
+        } else if (board[neighbor]) {
+          borders.add(board[neighbor]);
+        }
+      }
+    }
+    if (borders.size === 1) {
+      if (borders.has('black')) black += region.length;
+      if (borders.has('white')) white += region.length;
+    }
+  }
+
+  return {
+    black,
+    white,
+    komi,
+    winner: black === white ? null : black > white ? 'black' : 'white',
+  };
+}
