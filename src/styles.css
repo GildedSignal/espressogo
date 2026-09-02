@@ -82,9 +82,9 @@ body { background:#e9e1d3 url('../public/images/courtyard-wall-v2.webp') center 
 body { background:#e9e1d3 url('../public/images/courtyard-wall-v2.webp') center / cover scroll no-repeat; }
 /* This is intentionally one GPU-composited breeze layer. The prior full-screen
    blur, blend mode, and animated background-position forced expensive repaints. */
-.wall-shadow { display:block; position:fixed; inset:-2%; z-index:20; width:auto; height:auto; overflow:hidden; opacity:.22; filter:none; transform:none; transform-origin:34% 12%; pointer-events:none; background:url('../public/images/tree-shadow-overlay.webp') 50% 50% / cover no-repeat; animation:tree-light-canopy 18s cubic-bezier(.45,0,.55,1) infinite alternate; will-change:transform,opacity; }
+.wall-shadow { display:block; position:fixed; inset:-2%; z-index:20; width:auto; height:auto; overflow:hidden; opacity:.2; filter:none; transform:none; transform-origin:34% 12%; pointer-events:none; background:url('../public/images/tree-shadow-overlay.webp') 50% 50% / cover no-repeat; animation:tree-light-canopy 15s cubic-bezier(.45,0,.55,1) infinite alternate; will-change:transform,opacity; }
 .wall-shadow::before { display:none; }
-.wall-shadow::after { content:""; position:absolute; inset:0; pointer-events:none; background:inherit; background-size:cover; opacity:.25; transform-origin:31% 15%; animation:tree-light-leaves 5.6s cubic-bezier(.45,0,.55,1) infinite alternate; will-change:transform,opacity; }
+.wall-shadow::after { content:""; position:absolute; inset:0; pointer-events:none; background:inherit; background-size:cover; opacity:.42; transform-origin:31% 15%; animation:tree-light-leaves 4.6s cubic-bezier(.45,0,.55,1) infinite alternate; will-change:transform,opacity; }
 .room { z-index:1; }
 .source-note a { display:block; }
 .sound-toggle { position:static; display:block; width:auto; height:auto; margin:.72rem 0 0; padding:.15rem 0; border:0; border-bottom:1px solid rgba(53,60,65,.24); background:transparent; color:var(--muted); font-family:"Cormorant Garamond", Georgia, serif; font-size:1.02rem; line-height:1.2; text-align:left; transform:none; }
@@ -109,10 +109,10 @@ body { background:#e9e1d3 url('../public/images/courtyard-wall-v2.webp') center 
   100% { transform:translate3d(8px,4px,0) rotate(.16deg) scale(1.012); opacity:.23; }
 }
 @keyframes tree-light-leaves {
-  0% { transform:translate3d(-8px,4px,0) rotate(-.22deg) scale(1.01); opacity:.2; }
-  34% { transform:translate3d(9px,-5px,0) rotate(.16deg) scale(1.022); opacity:.42; }
-  68% { transform:translate3d(-5px,6px,0) rotate(-.1deg) scale(1.014); opacity:.25; }
-  100% { transform:translate3d(12px,-4px,0) rotate(.21deg) scale(1.028); opacity:.38; }
+  0% { transform:translate3d(-11px,6px,0) rotate(-.24deg) scale(1.012); opacity:.27; }
+  34% { transform:translate3d(14px,-7px,0) rotate(.18deg) scale(1.027); opacity:.56; }
+  68% { transform:translate3d(-7px,8px,0) rotate(-.12deg) scale(1.018); opacity:.3; }
+  100% { transform:translate3d(17px,-6px,0) rotate(.23deg) scale(1.034); opacity:.5; }
 }
 @keyframes tree-light-gust {
   0% { transform:translate3d(-2px,0,0) rotate(-.08deg) scale(1.005); opacity:.08; }
@@ -121,6 +121,11 @@ body { background:#e9e1d3 url('../public/images/courtyard-wall-v2.webp') center 
 }
 @media (max-width:760px) { .stone-choice .choice-stone { width:2.15rem; } .player-stone { grid-template-rows:2.55rem auto auto; } }
 @media (prefers-reduced-motion:reduce) { .wall-shadow, .wall-shadow::before, .wall-shadow::after { animation:none!important; transform:none!important; } }
+
+@media (max-width:760px) {
+  .wall-shadow { inset:-7%; opacity:.24; }
+  .wall-shadow::after { opacity:.48; }
+}
 
 /* Editorial balance: the board and the printed column are two equal anchors,
    while the controls recede into the material of the room. */
