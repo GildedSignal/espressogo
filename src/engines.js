@@ -1,9 +1,3 @@
-import {
-  GoModelWorkerClient,
-  encodeStudentFeatures,
-  selectHighestLegalMove,
-} from "../dist/index.js";
-
 const PASS = 81;
 const BLACK = 1;
 const WHITE = -1;
@@ -16,6 +10,8 @@ const ENGINES = {
     simulations: 64,
     rootD4: false,
     search: true,
+    modelSizeBytes: 212364,
+    modelFormat: "INT8",
   },
   "moka-web": {
     label: "Moka web",
@@ -24,6 +20,8 @@ const ENGINES = {
     simulations: 56,
     rootD4: true,
     search: true,
+    modelSizeBytes: 113648,
+    modelFormat: "reference",
   },
   "moka-github": {
     label: "Moka GitHub",
@@ -32,6 +30,8 @@ const ENGINES = {
     simulations: 0,
     rootD4: false,
     search: false,
+    modelSizeBytes: 113648,
+    modelFormat: "reference",
   },
 };
 
@@ -57,7 +57,10 @@ function autoplayOpening(uiState) {
   if (!uiState.autoplay || uiState.moveHistory?.length) return null;
   const legal = AUTOPLAY_OPENINGS.filter((index) => uiState.board[index] === null);
   if (!legal.length) return null;
-  return { index: legal[Math.floor(Math.random() * legal.length)] };
+  return {
+    index: legal[Math.floor(Math.random() * legal.length)],
+    telemetry: { elapsedMs: 0, pondered: false, modelFormat: "opening variation", modelSizeBytes: null },
+  };
 }
 
 const cloneState = (state) => ({
@@ -70,6 +73,13 @@ const cloneState = (state) => ({
 });
 
 const createInitializedEngine = async (config) => {
+  // The runtime bundle contains the evaluator and search implementation. Keep
+  // it out of the landing-page critical path; it is needed only for a move.
+  const {
+    GoModelWorkerClient,
+    encodeStudentFeatures,
+    selectHighestLegalMove,
+  } = await import("../dist/index.js");
   const worker = new Worker(new URL("../dist/worker.js", import.meta.url), { type: "module" });
   const client = new GoModelWorkerClient(worker);
   try {
@@ -90,10 +100,19 @@ const createInitializedEngine = async (config) => {
     return {
       async requestMove(uiState) {
         const state = toMokaState(uiState);
+        const startedAt = performance.now();
         if (!config.search) {
           const inference = await client.infer(encodeStudentFeatures(cloneState(state)));
           const move = selectHighestLegalMove(state, inference.policyLogits);
-          return move === PASS ? { pass: true } : { index: move };
+          return {
+            ...(move === PASS ? { pass: true } : { index: move }),
+            telemetry: {
+              elapsedMs: Math.round(performance.now() - startedAt),
+              pondered: false,
+              modelFormat: config.modelFormat,
+              modelSizeBytes: config.modelSizeBytes,
+            },
+          };
         }
         const result = await client.selectMove(state, {
           budgetMs: 8000,
@@ -101,7 +120,15 @@ const createInitializedEngine = async (config) => {
           rootD4: config.rootD4,
         });
         if (config.ponder) client.startPonder().catch(() => {});
-        return result.move === PASS ? { pass: true } : { index: result.move };
+        return {
+          ...(result.move === PASS ? { pass: true } : { index: result.move }),
+          telemetry: {
+            elapsedMs: Math.round(result.elapsedMs ?? (performance.now() - startedAt)),
+            pondered: Boolean(result.reusedTree),
+            modelFormat: config.modelFormat,
+            modelSizeBytes: config.modelSizeBytes,
+          },
+        };
       },
     };
   } catch (error) {
@@ -120,7 +147,12 @@ const createEngine = async (config) => {
     // fallback names itself as the reference engine; it is never Espresso.
     console.warn("Espresso INT8 backend unavailable; using Moka web reference.", error);
     return {
-      adapter: await createInitializedEngine({ ...config, backend: "reference" }),
+      adapter: await createInitializedEngine({
+        ...config,
+        backend: "reference",
+        modelFormat: "reference",
+        modelSizeBytes: 113648,
+      }),
       displayLabel: "Moka web (reference)",
     };
   }

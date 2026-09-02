@@ -50,13 +50,14 @@ button { cursor:pointer; }
 .intersection .white.last-move::before { border-color:rgba(47,55,59,.74); }
 .star { position:absolute; width:1.15%; min-width:4px; aspect-ratio:1; border-radius:50%; background:rgba(39,45,47,.86); z-index:3; transform:translate(-50%,-50%); pointer-events:none; }.star.tl{left:25%;top:25%}.star.tr{left:75%;top:25%}.star.c{left:50%;top:50%}.star.bl{left:25%;top:75%}.star.br{left:75%;top:75%}
 .board-coordinates { position:absolute; color:rgba(53,60,65,.77); font-family:"Cormorant Garamond", Georgia, serif; font-size:clamp(.85rem,1.4vw,1.05rem); line-height:1; letter-spacing:.025em; display:grid; }.coordinates-top { grid-template-columns:repeat(9,1fr); left:clamp(3.2rem,6.3vw,5.65rem); right:clamp(2.6rem,5.4vw,4.75rem); top:clamp(1.25rem,2.5vw,2.2rem); text-align:center; }.coordinates-left { grid-template-rows:repeat(9,1fr); top:clamp(2.7rem,5.5vw,4.8rem); bottom:clamp(2.8rem,5.7vw,5rem); left:clamp(1.2rem,2.4vw,2.05rem); align-items:center; text-align:center; }
-.game-footer { display:grid; grid-template-columns:1fr auto; align-items:center; min-height:3.7rem; padding:.9rem .65rem 0; }.turn-status { margin:0; font-family:"Cormorant Garamond", Georgia, serif; font-size:1.55rem; letter-spacing:-.02em; }.thinking { grid-column:1; margin:.08rem 0 0; color:var(--muted); font-style:italic; font-size:.84rem; }.game-actions { display:flex; gap:1.8rem; }.game-actions button { padding:.35rem .05rem; border:0; border-bottom:1px solid rgba(53,60,65,.24); background:transparent; color:var(--muted); font-family:"Cormorant Garamond", Georgia, serif; font-size:1.25rem; transition:color .2s,border-color .2s; }.game-actions button:hover,.game-actions button:focus-visible{color:var(--ink);border-color:var(--ink);}.game-actions #resign{opacity:.72;}
+.game-footer { display:grid; grid-template-columns:1fr auto; grid-template-rows:auto 1.15rem; align-items:center; min-height:4.75rem; padding:.9rem .65rem 0; }.turn-status { grid-column:1; grid-row:1; margin:0; font-family:"Cormorant Garamond", Georgia, serif; font-size:1.55rem; letter-spacing:-.02em; }.thinking { grid-column:1; grid-row:2; min-height:1.15rem; margin:.08rem 0 0; color:var(--muted); font-style:italic; font-size:.84rem; }.thinking[hidden] { display:block; visibility:hidden; }.game-actions { grid-column:2; grid-row:1 / span 2; display:flex; gap:1.8rem; }.game-actions button { padding:.35rem .05rem; border:0; border-bottom:1px solid rgba(53,60,65,.24); background:transparent; color:var(--muted); font-family:"Cormorant Garamond", Georgia, serif; font-size:1.25rem; transition:color .2s,border-color .2s; }.game-actions button:hover,.game-actions button:focus-visible{color:var(--ink);border-color:var(--ink);}.game-actions #resign{opacity:.72;}
+.move-log { min-height:4.9rem; max-height:4.9rem; margin:.2rem 8% 0; padding:.55rem 0 0 1.25rem; overflow:auto; border-top:1px solid rgba(53,60,65,.13); color:var(--muted); font-size:.78rem; font-style:italic; line-height:1.5; scrollbar-width:thin; }.move-log:empty::before { content:"Move details appear here."; display:block; margin-left:-1.25rem; color:rgba(53,60,65,.45); }
 .sound-toggle { position:absolute; right:var(--side); bottom:2.1rem; width:2rem; height:2rem; padding:0; border:0; background:transparent; color:var(--muted); font-size:1.33rem; line-height:1; transition:color .2s, transform .2s; }.sound-toggle:hover,.sound-toggle:focus-visible{color:var(--ink);transform:scale(1.08)}.sound-toggle[aria-pressed="true"]{color:var(--blue)}
 .fresco { height:clamp(4.8rem,8vh,6.6rem); border-top:1px solid rgba(68,78,79,.32); opacity:.47; background-color:#c3c1b5; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='100' viewBox='0 0 180 100'%3E%3Cg fill='none' stroke='%23627f8c' stroke-width='2' opacity='.52'%3E%3Cpath d='M0 84 Q14 46 30 84T60 84T90 84T120 84T150 84T180 84 M0 22h180 M14 22q0 25 16 25t16-25 M74 22q0 25 16 25t16-25 M134 22q0 25 16 25t16-25'/%3E%3C/g%3E%3Cg fill='%23a87870' opacity='.28'%3E%3Ccircle cx='30' cy='65' r='4'/%3E%3Ccircle cx='90' cy='65' r='4'/%3E%3Ccircle cx='150' cy='65' r='4'/%3E%3C/g%3E%3C/svg%3E"), linear-gradient(90deg,rgba(91,113,124,.12),rgba(168,120,112,.1)); background-size:180px 100px,auto; box-shadow:inset 0 1px rgba(255,255,255,.42); }
 .quiet-dialog { width:min(26rem, calc(100vw - 2rem)); padding:2.5rem; border:1px solid rgba(73,61,43,.25); color:var(--ink); background:var(--board); box-shadow:0 16px 40px rgba(49,40,27,.22); }.quiet-dialog::backdrop { background:rgba(46,41,32,.18); backdrop-filter:blur(2px); }.quiet-dialog h2 { margin:0 0 .5rem; font-family:"Cormorant Garamond",Georgia,serif;font-size:2rem;font-weight:500; }.quiet-dialog p { color:var(--muted);line-height:1.5; }.dialog-close { float:right;border:0;background:none;font-size:1.6rem;color:var(--muted); }
 
 /* The place and its objects are photographs, not CSS texture simulations. */
-body { background:#e9e1d3 url('../public/images/courtyard-wall-v2.webp') center / cover fixed no-repeat; }
+body { background:#e9e1d3 url('../public/images/courtyard-wall-v2.webp') center / cover scroll no-repeat; }
 .wall-shadow, .fresco { display:none; }
 .game-area { width:min(100%, 52rem); }
 .board-wrap { aspect-ratio:1; padding:0; border:0; border-radius:0; box-shadow:none; background:url('../public/images/go-board-slab-v4.webp') center / contain no-repeat; }
@@ -78,11 +79,12 @@ body { background:#e9e1d3 url('../public/images/courtyard-wall-v2.webp') center 
 @media (prefers-reduced-motion: reduce) { *,*::before,*::after { scroll-behavior:auto!important; animation-duration:.01ms!important; animation-iteration-count:1!important; transition-duration:.01ms!important; } }
 
 /* Photograph layers: the wall stays still while the light moves across it. */
-body { background:#e9e1d3 url('../public/images/courtyard-wall-v2.webp') center / cover fixed no-repeat; }
-.wall-shadow { display:block; position:fixed; inset:0; z-index:20; width:auto; height:auto; overflow:hidden; opacity:.29; filter:blur(2.4px); transform:none; transform-origin:34% 12%; mix-blend-mode:multiply; pointer-events:none; background:url('../public/images/tree-shadow-overlay.webp') 50% 50% / cover no-repeat; animation:tree-light-canopy 18s cubic-bezier(.45,0,.55,1) infinite alternate; will-change:transform,opacity,background-position; }
-.wall-shadow::before, .wall-shadow::after { content:""; position:absolute; pointer-events:none; background:inherit; background-size:cover; mix-blend-mode:multiply; will-change:transform,opacity,background-position; }
-.wall-shadow::before { inset:-4%; opacity:.12; background-position:53% 48%; filter:blur(.8px); transform-origin:47% 9%; animation:tree-light-gust 11s ease-in-out infinite alternate; }
-.wall-shadow::after { inset:-3%; opacity:.35; background-position:48% 52%; filter:blur(1.1px); transform-origin:31% 15%; animation:tree-light-leaves 5.6s cubic-bezier(.45,0,.55,1) infinite alternate; }
+body { background:#e9e1d3 url('../public/images/courtyard-wall-v2.webp') center / cover scroll no-repeat; }
+/* This is intentionally one GPU-composited breeze layer. The prior full-screen
+   blur, blend mode, and animated background-position forced expensive repaints. */
+.wall-shadow { display:block; position:fixed; inset:-2%; z-index:20; width:auto; height:auto; overflow:hidden; opacity:.22; filter:none; transform:none; transform-origin:34% 12%; pointer-events:none; background:url('../public/images/tree-shadow-overlay.webp') 50% 50% / cover no-repeat; animation:tree-light-canopy 18s cubic-bezier(.45,0,.55,1) infinite alternate; will-change:transform,opacity; }
+.wall-shadow::before { display:none; }
+.wall-shadow::after { content:""; position:absolute; inset:0; pointer-events:none; background:inherit; background-size:cover; opacity:.25; transform-origin:31% 15%; animation:tree-light-leaves 5.6s cubic-bezier(.45,0,.55,1) infinite alternate; will-change:transform,opacity; }
 .room { z-index:1; }
 .source-note a { display:block; }
 .sound-toggle { position:static; display:block; width:auto; height:auto; margin:.72rem 0 0; padding:.15rem 0; border:0; border-bottom:1px solid rgba(53,60,65,.24); background:transparent; color:var(--muted); font-family:"Cormorant Garamond", Georgia, serif; font-size:1.02rem; line-height:1.2; text-align:left; transform:none; }
@@ -107,10 +109,10 @@ body { background:#e9e1d3 url('../public/images/courtyard-wall-v2.webp') center 
   100% { transform:translate3d(8px,4px,0) rotate(.16deg) scale(1.012); opacity:.23; }
 }
 @keyframes tree-light-leaves {
-  0% { transform:translate3d(-8px,4px,0) rotate(-.22deg) scale(1.01); opacity:.26; background-position:46% 53%; }
-  34% { transform:translate3d(9px,-5px,0) rotate(.16deg) scale(1.022); opacity:.48; background-position:53% 47%; }
-  68% { transform:translate3d(-5px,6px,0) rotate(-.1deg) scale(1.014); opacity:.3; background-position:48% 55%; }
-  100% { transform:translate3d(12px,-4px,0) rotate(.21deg) scale(1.028); opacity:.44; background-position:55% 49%; }
+  0% { transform:translate3d(-8px,4px,0) rotate(-.22deg) scale(1.01); opacity:.2; }
+  34% { transform:translate3d(9px,-5px,0) rotate(.16deg) scale(1.022); opacity:.42; }
+  68% { transform:translate3d(-5px,6px,0) rotate(-.1deg) scale(1.014); opacity:.25; }
+  100% { transform:translate3d(12px,-4px,0) rotate(.21deg) scale(1.028); opacity:.38; }
 }
 @keyframes tree-light-gust {
   0% { transform:translate3d(-2px,0,0) rotate(-.08deg) scale(1.005); opacity:.08; }

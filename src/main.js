@@ -4,7 +4,7 @@ import { attachEngines } from './engines.js';
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J'];
 const PLACEMENT_VARIATION_ENABLED = true;
-const AUTOPLAY_MOVE_DELAY_MS = 620;
+const AUTOPLAY_MOVE_DELAY_MS = 0;
 // Measured from the actual raster slab: the hand-made grid is not perfectly
 // uniform, so interaction positions follow its detected lines exactly.
 const GRID_X = [0, 12.544, 25.088, 37.632, 50.176, 62.720, 75.264, 87.573, 100];
@@ -28,6 +28,7 @@ const autoplayControls = document.querySelector('#autoplay-controls');
 const engineSeats = [...document.querySelectorAll('.engine-seat')];
 const engineList = document.querySelector('#engine-list');
 const engineNote = document.querySelector('#engine-note');
+const moveLogElement = document.querySelector('#move-log');
 const howToPlay = document.querySelector('#how-to-play');
 const audio = new CourtyardAudio();
 
@@ -50,6 +51,7 @@ let placedStoneDetails = new Map();
 let placementSerial = 0;
 let gameRevision = 0;
 let pendingOpponentTimer = null;
+let moveLog = [];
 
 function normalSample() {
   const a = Math.max(Number.MIN_VALUE, Math.random());
@@ -176,6 +178,7 @@ function renderBoard() {
 
 function render() {
   renderBoard();
+  renderMoveLog();
   blackCaptures.textContent = String(captures.black);
   whiteCaptures.textContent = String(captures.white);
   colorButtons.forEach((button) => {
@@ -199,6 +202,43 @@ function render() {
     engineNote.textContent = unavailable.length ? 'Attach an engine to begin autoplay.' : 'Autoplay is running.';
   }
   syncSoundControls();
+}
+
+function formatModelSize(bytes) {
+  if (!Number.isFinite(bytes)) return null;
+  return `${Math.round(bytes / 1024)} KB`;
+}
+
+function renderMoveLog() {
+  if (!moveLogElement) return;
+  const recent = moveLog.slice(-4);
+  moveLogElement.replaceChildren(...recent.map((entry) => {
+    const item = document.createElement('li');
+    const place = entry.pass ? 'pass' : coordinate(entry.index);
+    const actor = entry.telemetry ? opponentLabel(entry.opponentId) : 'You';
+    const details = entry.telemetry
+      ? [
+        `${entry.telemetry.elapsedMs} ms`,
+        `pondered: ${entry.telemetry.pondered ? 'yes' : 'no'}`,
+        entry.telemetry.modelSizeBytes === null
+          ? entry.telemetry.modelFormat
+          : `${formatModelSize(entry.telemetry.modelSizeBytes)} ${entry.telemetry.modelFormat}`,
+      ].join(' · ')
+      : 'manual';
+    item.textContent = `${entry.number}. ${entry.color} ${place} — ${actor} · ${details}`;
+    return item;
+  }));
+}
+
+function recordMove({ color, index = null, pass = false, telemetry = null, opponentId = null }) {
+  moveLog.push({
+    number: moveHistory.length,
+    color,
+    index,
+    pass,
+    telemetry,
+    opponentId,
+  });
 }
 
 function syncSoundControls() {
@@ -230,6 +270,7 @@ function reset({ color = playerColor } = {}) {
   focusedIndex = at(4, 4);
   placedStoneDetails = new Map();
   placementSerial = 0;
+  moveLog = [];
   thinking.hidden = true;
   announce(isPlayerTurn() ? currentTurnLabel() : pendingMessage());
   render();
@@ -248,7 +289,7 @@ function finish(message) {
   render();
 }
 
-function applyMove(index, color, { distant = false } = {}) {
+function applyMove(index, color, { distant = false, telemetry = null, opponentId = null } = {}) {
   if (finished || color !== turn || !Number.isInteger(index) || index < 0 || index >= SIZE * SIZE) return false;
   const result = tryMove(board, index, color, { koMove });
   if (!result.legal) return false;
@@ -260,6 +301,7 @@ function applyMove(index, color, { distant = false } = {}) {
   passes = 0;
   koMove = result.koMove;
   moveHistory.push(index);
+  recordMove({ color, index, telemetry, opponentId });
   hoveredIndex = null;
   if (!distant) {
     audio.place({ color, row: Math.floor(index / SIZE), col: index % SIZE, distant, impact: placement.impact });
@@ -272,11 +314,12 @@ function applyMove(index, color, { distant = false } = {}) {
   return true;
 }
 
-function applyPass(color) {
+function applyPass(color, { telemetry = null, opponentId = null } = {}) {
   if (finished || color !== turn) return false;
   passes += 1;
   koMove = -1;
   moveHistory.push(SIZE * SIZE);
+  recordMove({ color, pass: true, telemetry, opponentId });
   if (passes >= 2) {
     finish('Two consecutive passes. The game is finished.');
     return true;
@@ -318,8 +361,12 @@ function requestOpponentMove() {
       if (revision !== gameRevision || finished || controllerFor(turn) !== opponentId) return;
       waitingForOpponent = false;
       thinking.hidden = true;
-      if (move?.pass) applyPass(turn);
-      else if (!applyMove(Number.isInteger(move) ? move : move?.index, turn, { distant: true })) {
+      if (move?.pass) applyPass(turn, { telemetry: move.telemetry ?? null, opponentId });
+      else if (!applyMove(Number.isInteger(move) ? move : move?.index, turn, {
+        distant: true,
+        telemetry: move?.telemetry ?? null,
+        opponentId,
+      })) {
         announce(`${currentTurnLabel()} ${opponentLabel(opponentId)} returned no legal move.`);
         render();
       }
@@ -331,8 +378,7 @@ function requestOpponentMove() {
       render();
     });
   };
-  // Autoplay remains interruptible: one move at a time with enough air to
-  // read the game, rather than a worker-to-worker waterfall.
+  // Keep a task boundary for cancellation, but never pace or weaken Espresso.
   if (autoplay) pendingOpponentTimer = window.setTimeout(runRequest, AUTOPLAY_MOVE_DELAY_MS);
   else runRequest();
 }
