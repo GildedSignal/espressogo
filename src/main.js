@@ -330,13 +330,25 @@ function reset({ color = playerColor, keepMatch = false } = {}) {
   requestOpponentMove();
 }
 
-function completeAutoplayGame(reason) {
+function summarizeScore(score) {
+  const scoreLine = `Black ${formatScore(score.black)} — White ${formatScore(score.white)}`;
+  if (!score.winner) return `Draw · ${scoreLine}.`;
+  return `${score.winner[0].toUpperCase()}${score.winner.slice(1)} wins · ${scoreLine}.`;
+}
+
+function completeGame(reason, { continueAutoplay = false } = {}) {
   const score = scoreArea(board);
-  matchStats.games += 1;
-  if (score.winner) matchStats.wins[score.winner] += 1;
-  matchStats.lastScore = score;
-  const scoreLine = `Black ${formatScore(score.black)} — White ${formatScore(score.white)}.`;
-  finish(`${reason} ${scoreLine}`, { continueAutoplay: true });
+  if (continueAutoplay) {
+    matchStats.games += 1;
+    if (score.winner) matchStats.wins[score.winner] += 1;
+    matchStats.lastScore = score;
+  }
+  finish(`${reason} ${summarizeScore(score)}`, { continueAutoplay });
+}
+
+function finishResignation(resigningColor) {
+  const winner = otherColor(resigningColor);
+  finish(`${resigningColor[0].toUpperCase()}${resigningColor.slice(1)} resigned. ${winner[0].toUpperCase()}${winner.slice(1)} wins.`);
 }
 
 function finish(message, { continueAutoplay = false } = {}) {
@@ -386,7 +398,7 @@ function applyMove(index, color, { distant = false, telemetry = null, opponentId
   }
   turn = otherColor(color);
   if (autoplay && moveHistory.length >= AUTOPLAY_MAX_MOVES) {
-    completeAutoplayGame('Move limit reached.');
+    completeGame('Move limit reached.', { continueAutoplay: true });
     return true;
   }
   announce(currentTurnLabel());
@@ -402,8 +414,7 @@ function applyPass(color, { telemetry = null, opponentId = null } = {}) {
   moveHistory.push(SIZE * SIZE);
   recordMove({ color, pass: true, telemetry, opponentId });
   if (passes >= 2) {
-    if (autoplay) completeAutoplayGame('Two consecutive passes.');
-    else finish('Two consecutive passes. The game is finished.');
+    completeGame('Two consecutive passes.', { continueAutoplay: autoplay });
     return true;
   }
   turn = otherColor(color);
@@ -541,7 +552,7 @@ passButton.addEventListener('click', () => {
 resignButton.addEventListener('click', () => {
   if (finished || waitingForOpponent) return;
   audio.resign();
-  finish(`${playerColor[0].toUpperCase()}${playerColor.slice(1)} resigned.`);
+  finishResignation(turn);
   window.setTimeout(() => {
     audio.cleanBoard();
     reset({ color: playerColor });
@@ -625,7 +636,7 @@ window.EspressoGame = Object.freeze({
   getState,
   play: (index) => applyMove(index, turn, { distant: turn !== playerColor }),
   pass: () => applyPass(turn),
-  resign: () => finish(`${turn[0].toUpperCase()}${turn.slice(1)} resigned.`),
+  resign: () => finishResignation(turn),
   reset,
   setOpponent(adapter) { opponents.get('espresso').adapter = adapter; requestOpponentMove(); },
   registerOpponent(id, { label = id, adapter } = {}) {
